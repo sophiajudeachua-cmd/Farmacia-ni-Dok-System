@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}Batch Stocks{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <div class="panel-header" style="display: flex; flex-direction: column; gap: 16px; align-items: stretch;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;">Batch Stocks</h3>
+            <span class="list-count-badge">
+                {{ items | length }} batch(es)
+            </span>
+        </div>
+        
+        <div style="display: flex; gap: 12px; align-items: center; justify-content: space-between; width: 100%;">
+            <div class="search-input" style="margin-bottom: 0; max-width: 320px;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="search-input" placeholder="Search medicine" onkeyup="filterTable()">
+            </div>
+            <div class="filter-container">
+                <i class="fa-solid fa-filter"></i>
+                <select id="filter-status" class="filter-select" onchange="filterTable()">
+                    <option value="">All Statuses</option>
+                    <option value="Good Stock">Good Stock</option>
+                    <option value="Low Stock">Low Stock</option>
+                    <option value="Empty">Empty</option>
+                </select>
+                <span style="color: var(--border-light); font-size: 14px; user-select: none; margin: 0 4px;">|</span>
+                <select id="filter-category" class="filter-select" onchange="filterTable()">
+                    <option value="">All Categories</option>
+                    {% for cat in items | map(attribute='category') | unique | sort %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Batch ID</th>
+                <th>Medicine</th>
+                <th>Expiry Date</th>
+                <th>Current Quantity</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr data-brand="{{ item.medicine | lower }}" data-category="{{ item.category | lower }}" data-status="{% if item.current_qty >= 50 %}Good Stock{% elif item.current_qty > 0 %}Low Stock{% else %}Empty{% endif %}">
+                <td>{{ item.batch_id }}</td>
+                <td>{{ item.medicine }}</td>
+                <td>{{ item.expiry_date }}</td>
+                <td>{{ item.current_qty }}</td>
+                <td>
+                    {% if item.current_qty >= 50 %}
+                        <span class="status-badge status-good">Good Stock</span>
+                    {% elif item.current_qty > 0 %}
+                        <span class="status-badge status-low-stock">Low Stock</span>
+                    {% else %}
+                        <span class="status-badge status-empty">Empty</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function filterTable() {
+        const search = document.getElementById('search-input').value.toLowerCase();
+        const status = document.getElementById('filter-status').value;
+        const category = document.getElementById('filter-category').value.toLowerCase();
+        document.querySelectorAll('tbody tr').forEach(row => {
+            const brand = row.dataset.brand || '';
+            const rStatus = row.dataset.status || '';
+            const rCategory = row.dataset.category || '';
+            
+            const matchesSearch = brand.includes(search);
+            const matchesStatus = !status || rStatus === status;
+            const matchesCategory = !category || rCategory === category;
+            
+            row.style.display = (matchesSearch && matchesStatus && matchesCategory) ? '' : 'none';
+        });
+    }
+</script>
+{% endblock %}

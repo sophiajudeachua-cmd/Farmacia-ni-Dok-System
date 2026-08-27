@@ -1,0 +1,536 @@
+{% extends 'base.html' %}
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<style>
+    #font-size-slider {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 20px;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        outline: none;
+        margin: 0;
+    }
+    #font-size-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        transition: transform 0.1s;
+    }
+    #font-size-slider::-webkit-slider-thumb:hover {
+        transform: scale(1.15);
+    }
+    #font-size-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border: none;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        transition: transform 0.1s;
+    }
+    #font-size-slider::-moz-range-thumb:hover {
+        transform: scale(1.15);
+    }
+</style>
+<form action="{{ url_for('settings') }}" method="POST" style="max-width: 800px; margin: 0 auto; padding-bottom: 40px;">
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div style="background: #e2fbe8; color: #10b981; padding: 12px 24px; border-radius: 12px; font-weight: 500; margin-bottom: 20px; font-size: 13.5px; border: 1px solid #c2f9d0;">
+                {{ messages[0] }}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- PHARMACY PROFILE -->
+    {% if session.get('role') != 'Staff' %}
+    <div class="settings-section-title">Pharmacy Profile</div>
+    <div class="settings-group-card">
+        <div class="settings-row">
+            <div class="settings-info">
+                <div class="settings-title">Pharmacy Name</div>
+                <div class="settings-subtitle">Shown on receipts and reports</div>
+            </div>
+            <input type="text" class="form-control" name="pharmacy_name" value="{{ settings.pharmacy_name }}" style="width: 320px; border-radius: 20px; padding: 8px 16px;" required>
+        </div>
+        <div class="settings-row">
+            <div class="settings-info">
+                <div class="settings-title">Address</div>
+                <div class="settings-subtitle">Physical pharmacy location</div>
+            </div>
+            <input type="text" class="form-control" name="address" value="{{ settings.address }}" style="width: 320px; border-radius: 20px; padding: 8px 16px;" required>
+        </div>
+        <div class="settings-row">
+            <div class="settings-info">
+                <div class="settings-title">Contact Number</div>
+                <div class="settings-subtitle">For official business inquiries</div>
+            </div>
+            <input type="text" class="form-control" name="contact" value="{{ settings.contact }}" style="width: 320px; border-radius: 20px; padding: 8px 16px;" required>
+        </div>
+        <div class="settings-row">
+            <div class="settings-info">
+                <div class="settings-title">Email</div>
+                <div class="settings-subtitle">Pharmacy billing and notifications email</div>
+            </div>
+            <input type="email" class="form-control" name="email" value="{{ settings.email }}" style="width: 320px; border-radius: 20px; padding: 8px 16px;" required>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- APPEARANCE -->
+    <div class="settings-section-title">Appearance</div>
+    <div class="settings-group-card">
+        <div class="settings-row">
+            <div class="settings-info">
+                <div class="settings-title">Dark Mode</div>
+                <div class="settings-subtitle">Switch between light and dark interface</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" name="dark_mode" {% if settings.dark_mode == 'true' %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="settings-row" style="flex-direction: column; align-items: stretch; gap: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div class="settings-info">
+                    <div class="settings-title">Font Size</div>
+                    <div class="settings-subtitle">Adjust text size across the app</div>
+                </div>
+                <input type="hidden" id="input-font-size" name="font_size" value="{{ settings.font_size }}">
+            </div>
+            
+            <div style="max-width: 440px; width: 100%; margin: 8px auto 0 auto; padding: 0 16px;">
+                <div style="position: relative; margin-bottom: 24px; padding: 0 10px;">
+                    <!-- Visual track line -->
+                    <div style="position: absolute; left: 10px; right: 10px; top: 8px; height: 4px; background: var(--border-strong); border-radius: 2px; z-index: 1;"></div>
+                    
+                    <!-- 3 Red circles at steps -->
+                    <div style="position: absolute; left: 10px; right: 10px; top: 10px; height: 0; z-index: 2; pointer-events: none;">
+                        <span id="step-dot-1" style="position: absolute; left: 0%; top: 0; transform: translate(-50%, -50%); width: 8px; height: 8px; background-color: var(--border-strong); border-radius: 50%; display: block; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></span>
+                        <span id="step-dot-2" style="position: absolute; left: 50%; top: 0; transform: translate(-50%, -50%); width: 8px; height: 8px; background-color: var(--border-strong); border-radius: 50%; display: block; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></span>
+                        <span id="step-dot-3" style="position: absolute; left: 100%; top: 0; transform: translate(-50%, -50%); width: 8px; height: 8px; background-color: var(--border-strong); border-radius: 50%; display: block; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></span>
+                    </div>
+                    
+                    <!-- Slider input -->
+                    <input type="range" id="font-size-slider" min="1" max="3" step="1" oninput="updateFontSizeSlider(this.value)" style="position: relative; z-index: 3;">
+                </div>
+                
+                <div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
+                    <div style="color: var(--text-gray); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Preview Example</div>
+                    <p id="font-size-preview" style="color: var(--text-dark); margin: 0; transition: font-size 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                        Farmacia ni Dok generic & branded medicines.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACCESSIBILITY -->
+    <div class="settings-section-title">Accessibility</div>
+    <div class="settings-group-card">
+        <div class="settings-row">
+            <div class="settings-info">
+                <div class="settings-title">High Contrast Mode</div>
+                <div class="settings-subtitle">Increase contrast for better readability</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" name="high_contrast" {% if settings.high_contrast == 'true' %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="settings-row">
+            <div class="settings-info">
+                <div class="settings-title">Reduce Motion</div>
+                <div class="settings-subtitle">Minimize animations throughout the app</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" name="reduce_motion" {% if settings.reduce_motion == 'true' %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="settings-row">
+            <div class="settings-info">
+                <div class="settings-title">Screen Reader Friendly</div>
+                <div class="settings-subtitle">Optimize layout for assistive technologies</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" name="screen_reader" {% if settings.screen_reader == 'true' %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="settings-row">
+            <div class="settings-info">
+                <div class="settings-title">Show Generic Names</div>
+                <div class="settings-subtitle">Display generic medicine names alongside brand names</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" name="show_generic" {% if settings.show_generic == 'true' %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <!-- ALERTS & NOTIFICATIONS -->
+    <div class="settings-section-title">Alerts & Notifications</div>
+    <div class="settings-group-card">
+        <div class="settings-row">
+            <div class="settings-info">
+                <div class="settings-title">Low Stock Alerts</div>
+                <div class="settings-subtitle">Notify when medicine stock falls below threshold</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" name="low_stock_alerts" {% if settings.low_stock_alerts == 'true' %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="settings-row">
+            <div class="settings-info">
+                <div class="settings-title">Expiry Alerts</div>
+                <div class="settings-subtitle">Warn when batches are approaching expiry date</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" name="expiry_alerts" {% if settings.expiry_alerts == 'true' %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="settings-row">
+            <div class="settings-info">
+                <div class="settings-title">Purchase Order Alerts</div>
+                <div class="settings-subtitle">Alert when orders are pending receipt</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" name="po_alerts" {% if settings.po_alerts == 'true' %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="settings-row">
+            <div class="settings-info">
+                <div class="settings-title">Transaction Notifications</div>
+                <div class="settings-subtitle">Show a notification after each transaction is recorded</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" name="sales_notifications" {% if settings.sales_notifications == 'true' %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <!-- INVENTORY PREFERENCES -->
+    {% if session.get('role') != 'Staff' %}
+    <div class="settings-section-title">Inventory Preferences</div>
+    <div class="settings-group-card">
+        <div class="settings-row">
+            <div class="settings-info">
+                <div class="settings-title">Low Stock Threshold</div>
+                <div class="settings-subtitle">Minimum units before Low Stock status triggers</div>
+            </div>
+            <input type="number" class="form-control" name="low_stock_threshold" value="{{ settings.low_stock_threshold }}" style="width: 120px; text-align: right; border-radius: 20px; padding: 6px 16px;" required>
+        </div>
+        <div class="settings-row">
+            <div class="settings-info">
+                <div class="settings-title">Near Expiry Warning (days)</div>
+                <div class="settings-subtitle">Days before expiry to trigger Near Expiry status</div>
+            </div>
+            <input type="number" class="form-control" name="near_expiry_warning" value="{{ settings.near_expiry_warning }}" style="width: 120px; text-align: right; border-radius: 20px; padding: 6px 16px;" required>
+        </div>
+
+    </div>
+    {% endif %}
+
+    <!-- SECURITY -->
+    <div class="settings-section-title">Security</div>
+    <div class="settings-group-card">
+        <div class="settings-row">
+            <div class="settings-info">
+                <div class="settings-title">Auto Logout</div>
+                <div class="settings-subtitle">Automatically log out after inactivity</div>
+            </div>
+            <select class="form-control" name="auto_logout" style="width: 150px; border-radius: 20px; padding: 6px 12px;" required>
+                <option value="15" {% if settings.auto_logout == '15' %}selected{% endif %}>15 minutes</option>
+                <option value="30" {% if settings.auto_logout == '30' %}selected{% endif %}>30 minutes</option>
+                <option value="60" {% if settings.auto_logout == '60' %}selected{% endif %}>1 hour</option>
+            </select>
+        </div>
+        <div class="settings-row">
+            <div class="settings-info">
+                <div class="settings-title">Require Password on Resume</div>
+                <div class="settings-subtitle">Ask for password after auto-logout</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" name="require_password" {% if settings.require_password == 'true' %}checked{% endif %}>
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <!-- SAVE & CANCEL BUTTONS -->
+    <div style="display: flex; gap: 12px; margin-top: 16px; margin-bottom: 24px;">
+        <button type="submit" class="modal-btn-save" style="padding: 10px 28px;">Save Changes</button>
+        <button type="button" class="modal-btn-cancel" style="padding: 10px 28px;" onclick="cancelChanges()">Cancel</button>
+    </div>
+
+    <!-- DATA BACKUP & RECOVERY -->
+    {% if session.get('role') != 'Staff' %}
+    <div class="settings-section-title">Data Backup & Recovery</div>
+    <div class="settings-group-card" style="padding: 20px;">
+        <div class="settings-row" style="padding-bottom: 16px; border-bottom: 1px solid var(--border);">
+            <div class="settings-info">
+                <div class="settings-title">Download Database Backup</div>
+                <div class="settings-subtitle">Export a complete backup copy of your database (.db file)</div>
+            </div>
+            <button type="button" onclick="downloadBackupFile(this)" class="btn-primary" style="width: auto; padding: 8px 20px; font-size: 13px; border-radius: 20px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+                <i class="fa-solid fa-download"></i> Download Backup
+            </button>
+        </div>
+        <div class="settings-row" style="padding-top: 16px;">
+            <div class="settings-info">
+                <div class="settings-title">Restore Database from File</div>
+                <div class="settings-subtitle">Upload a .db backup file to recover your system data</div>
+            </div>
+            <button type="button" class="btn-action-outline" style="padding: 8px 20px; font-size: 13px; border-radius: 20px; color: var(--accent); border-color: var(--accent);" onclick="openRestoreModal()">
+                <i class="fa-solid fa-upload"></i> Restore Database
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ACCOUNT -->
+    <div class="settings-section-title">Account</div>
+    <div style="display: flex; gap: 16px; align-items: center; padding: 16px 20px; border-radius: 12px; border: 1px solid #fee2e2; background: #fff; cursor: pointer; transition: background 0.2s;" onclick="window.location.href='{{ url_for('logout') }}'" onmouseover="this.style.background='#fff5f5'" onmouseout="this.style.background='#fff'">
+        <div style="width: 36px; height: 36px; border-radius: 50%; background: #fee2e2; display: flex; align-items: center; justify-content: center; color: #ef4444;">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        </div>
+        <div>
+            <div style="color: #ef4444; font-weight: 600; font-size: 14px;">Log Out</div>
+            <div style="color: var(--text-gray); font-size: 12px;">Sign out of your account</div>
+        </div>
+    </div>
+</form>
+
+<!-- Restore Database Modal -->
+<div id="restore-db-modal" class="modal-overlay" onclick="closeRestoreModalOnOverlay(event, this)">
+    <div class="modal-content" style="max-width: 500px;">
+        <button class="modal-close" onclick="closeRestoreModal()">&times;</button>
+        <div class="modal-header">
+            <h3>Restore Database</h3>
+            <p>Select a valid .db backup file to restore system data.</p>
+        </div>
+        <form action="{{ url_for('restore_db') }}" method="POST" enctype="multipart/form-data" onsubmit="return confirmAction(event, 'Overwrite system data?')">
+            <div class="modal-body">
+                <div style="background: #fff3cd; color: #856404; padding: 12px 16px; border-radius: 8px; font-size: 12.5px; border: 1px solid #ffeeba; margin-bottom: 16px;">
+                    <i class="fa-solid fa-triangle-exclamation"></i> <strong>Important:</strong> Make sure to download a backup of your current database before restoring.
+                </div>
+                <div class="form-group">
+                    <label>Select Backup File (.db / .sqlite)</label>
+                    <input type="file" class="form-control" name="backup_file" accept=".db,.sqlite,.bak" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn-cancel" onclick="closeRestoreModal()">Cancel</button>
+                <button type="submit" class="modal-btn-save" style="background: #dc2626;">Confirm Restore</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function showAppNotification(message, type = 'success') {
+        const wrapper = document.querySelector('.content-wrapper');
+        if (!wrapper) return;
+        
+        const isError = type === 'error' || type === 'danger';
+        const notif = document.createElement('div');
+        notif.style.cssText = `
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: ${isError ? 'rgba(220, 38, 38, 0.10)' : 'rgba(16, 185, 129, 0.12)'};
+            color: ${isError ? '#b91c1c' : '#065f46'};
+            border: 1px solid ${isError ? 'rgba(220, 38, 38, 0.25)' : 'rgba(16, 185, 129, 0.35)'};
+            box-shadow: 0 4px 14px ${isError ? 'rgba(220, 38, 38, 0.12)' : 'rgba(16, 185, 129, 0.15)'};
+            transition: all 0.3s ease;
+        `;
+        notif.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px;">
+                <i class="fa-solid ${isError ? 'fa-triangle-exclamation' : 'fa-circle-check'}" style="font-size:18px;color:${isError ? '#dc2626' : '#10b981'};"></i>
+                <span>${message}</span>
+            </div>
+            <button onclick="this.parentElement.remove()" style="background:none;border:none;color:inherit;font-size:18px;cursor:pointer;opacity:0.7;padding:0 4px;">&times;</button>
+        `;
+        
+        wrapper.insertBefore(notif, wrapper.firstChild);
+        
+        setTimeout(() => {
+            if (notif.parentNode) {
+                notif.style.opacity = '0';
+                setTimeout(() => notif.remove(), 400);
+            }
+        }, 7000);
+    }
+
+    function downloadBackupFile(btn) {
+        const origHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Exporting...';
+        btn.disabled = true;
+
+        fetch('{{ url_for("backup_db") }}')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) {
+                    showAppNotification('Backup export failed: ' + (data.error || 'Unknown error'), 'error');
+                    btn.innerHTML = origHTML;
+                    btn.disabled = false;
+                    return;
+                }
+
+                // 1. Trigger Base64 Data URI file download
+                const link = document.createElement('a');
+                link.href = 'data:application/octet-stream;base64,' + data.base64;
+                link.download = data.filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                btn.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#10b981;"></i> Saved!';
+                setTimeout(() => {
+                    btn.innerHTML = origHTML;
+                    btn.disabled = false;
+                }, 3000);
+
+                showAppNotification('Database backup downloaded successfully! Saved to Downloads: ' + data.filename, 'success');
+            })
+            .catch(err => {
+                showAppNotification('Backup export error: ' + err.message, 'error');
+                btn.innerHTML = origHTML;
+                btn.disabled = false;
+            });
+    }
+
+    function openRestoreModal() {
+        document.getElementById('restore-db-modal').classList.add('active');
+    }
+    function closeRestoreModal() {
+        document.getElementById('restore-db-modal').classList.remove('active');
+    }
+    function closeRestoreModalOnOverlay(e, overlay) {
+        if (e.target === overlay) {
+            closeRestoreModal();
+        }
+    }
+</script>
+
+<script>
+    function saveUnsavedFormState() {
+        const form = document.querySelector('form');
+        const state = {};
+        form.querySelectorAll('input, select').forEach(input => {
+            if (input.name) {
+                if (input.type === 'checkbox') {
+                    state[input.name] = input.checked;
+                } else {
+                    state[input.name] = input.value;
+                }
+            }
+        });
+        localStorage.setItem('unsaved_settings', JSON.stringify(state));
+    }
+
+    function restoreUnsavedFormState() {
+        const savedStateStr = localStorage.getItem('unsaved_settings');
+        if (!savedStateStr) return;
+        try {
+            const state = JSON.parse(savedStateStr);
+            const form = document.querySelector('form');
+            Object.keys(state).forEach(key => {
+                const input = form.querySelector(`[name="${key}"]`);
+                if (input) {
+                    if (input.type === 'checkbox') {
+                        input.checked = state[key];
+                    } else {
+                        input.value = state[key];
+                    }
+                }
+            });
+        } catch (e) {
+            console.error('Error restoring unsaved settings:', e);
+        }
+    }
+
+    function cancelChanges() {
+        localStorage.removeItem('unsaved_settings');
+        window.location.reload();
+    }
+
+    function updateFontSizeSlider(val) {
+        let sizeName = 'Medium';
+        let previewSize = '12px';
+        if (val === '1' || val === 1) {
+            sizeName = 'Small';
+            previewSize = '10px';
+        } else if (val === '3' || val === 3) {
+            sizeName = 'Large';
+            previewSize = '16px';
+        }
+        
+        document.getElementById('input-font-size').value = sizeName;
+        document.getElementById('font-size-preview').style.setProperty('font-size', previewSize, 'important');
+        
+        // Highlight active step dot
+        const currentVal = parseInt(val);
+        for (let i = 1; i <= 3; i++) {
+            const dot = document.getElementById('step-dot-' + i);
+            if (dot) {
+                if (i === currentVal) {
+                    dot.style.width = '14px';
+                    dot.style.height = '14px';
+                    dot.style.backgroundColor = 'var(--accent)';
+                    dot.style.boxShadow = '0 0 10px rgba(192, 57, 43, 0.45)';
+                } else {
+                    dot.style.width = '8px';
+                    dot.style.height = '8px';
+                    dot.style.backgroundColor = 'var(--border-strong)';
+                    dot.style.boxShadow = 'none';
+                }
+            }
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        // Restore state if page was refreshed/loaded
+        restoreUnsavedFormState();
+
+        const size = document.getElementById('input-font-size').value || '{{ settings.font_size }}';
+        let sliderVal = 2;
+        if (size === 'Small') sliderVal = 1;
+        else if (size === 'Large') sliderVal = 3;
+        
+        document.getElementById('font-size-slider').value = sliderVal;
+        updateFontSizeSlider(sliderVal);
+
+        // Bind form change listeners
+        document.querySelectorAll('form input, form select').forEach(input => {
+            input.addEventListener('change', saveUnsavedFormState);
+            input.addEventListener('input', saveUnsavedFormState);
+        });
+
+        // Clear state on save
+        document.querySelector('form').addEventListener('submit', () => {
+            localStorage.removeItem('unsaved_settings');
+        });
+    });
+</script>
+{% endblock %}

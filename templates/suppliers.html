@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% block title %}Suppliers{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <div class="panel-header" style="display: flex; flex-direction: column; gap: 16px; align-items: stretch;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;">Suppliers</h3>
+            <span class="list-count-badge">
+                {{ items | length }} supplier(s)
+            </span>
+        </div>
+        
+        <div style="display: flex; gap: 12px; align-items: center; justify-content: space-between; width: 100%;">
+            <div class="search-input" style="margin-bottom: 0; max-width: 320px;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Search supplier">
+            </div>
+            
+            <button class="btn-primary" style="width: auto; padding: 8px 24px; font-size: 13px; font-weight: 500; border-radius: 20px; text-align: center; display: inline-block; white-space: nowrap;" onclick="openSupModal()">+ Add Supplier</button>
+        </div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Address</th>
+                <th>Contact</th>
+                {% if session.get('role') != 'Staff' %}
+                <th>Action</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.id }}</td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.address }}</td>
+                <td>{{ item.contact }}</td>
+                {% if session.get('role') != 'Staff' %}
+                <td>
+                    <button class="btn-action-outline btn-edit" onclick="openEditSupModal('{{ item.id }}', '{{ item.name | escape }}', '{{ item.address | escape }}', '{{ item.contact | escape }}')">Edit</button>
+                    <form action="{{ url_for('delete_supplier', sup_id=item.id) }}" method="POST" style="display:inline;" onsubmit="return confirmAction(event, 'Delete supplier?')">
+                        <button type="submit" class="btn-action-outline btn-delete">Delete</button>
+                    </form>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Supplier Modal -->
+<div id="add-supplier-modal" class="modal-overlay" onclick="closeSupModalOnOverlay(event, this)">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeSupModal()">&times;</button>
+        <div class="modal-header">
+            <h3>Add Supplier</h3>
+            <p>Enter the supplier details below.</p>
+        </div>
+        <form action="{{ url_for('suppliers') }}" method="POST">
+            <div class="modal-body">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label>Supplier Name</label>
+                    <input type="text" class="form-control" placeholder="e.g. ABC Pharma Supply" name="name" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label>Address</label>
+                    <input type="text" class="form-control" placeholder="e.g. Calumpit, Bulacan" name="address" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Contact</label>
+                    <input type="text" class="form-control" placeholder="e.g. 0917-000-0000" name="contact" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn-cancel" onclick="closeSupModal()">Cancel</button>
+                <button type="submit" class="modal-btn-save">Save Supplier</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Supplier Modal -->
+<div id="edit-supplier-modal" class="modal-overlay" onclick="closeEditSupModalOnOverlay(event, this)">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeEditSupModal()">&times;</button>
+        <div class="modal-header">
+            <h3>Edit Supplier</h3>
+            <p>Update the supplier details below.</p>
+        </div>
+        <form action="{{ url_for('edit_supplier') }}" method="POST">
+            <div class="modal-body">
+                <input type="hidden" id="edit-sup-id" name="id">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label>Supplier Name</label>
+                    <input type="text" class="form-control" id="edit-sup-name" name="name" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label>Address</label>
+                    <input type="text" class="form-control" id="edit-sup-address" name="address" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Contact</label>
+                    <input type="text" class="form-control" id="edit-sup-contact" name="contact" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn-cancel" onclick="closeEditSupModal()">Cancel</button>
+                <button type="submit" class="modal-btn-save">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openSupModal() {
+        document.getElementById('add-supplier-modal').classList.add('active');
+    }
+    function closeSupModal() {
+        document.getElementById('add-supplier-modal').classList.remove('active');
+    }
+    function closeSupModalOnOverlay(e, overlay) {
+        if (e.target === overlay) {
+            closeSupModal();
+        }
+    }
+    function openEditSupModal(id, name, address, contact) {
+        document.getElementById('edit-sup-id').value = id;
+        document.getElementById('edit-sup-name').value = name;
+        document.getElementById('edit-sup-address').value = address;
+        document.getElementById('edit-sup-contact').value = contact;
+        document.getElementById('edit-supplier-modal').classList.add('active');
+    }
+    function closeEditSupModal() {
+        document.getElementById('edit-supplier-modal').classList.remove('active');
+    }
+    function closeEditSupModalOnOverlay(e, overlay) {
+        if (e.target === overlay) {
+            closeEditSupModal();
+        }
+    }
+</script>
+{% endblock %}

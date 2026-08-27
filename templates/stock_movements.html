@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}Stock Movement{% endblock %}
+
+{% block content %}
+<style>
+    .badge-stock-in { background: #dcfce7; color: #15803d; }
+    .badge-stock-out { background: #ffedd5; color: #c2410c; }
+    
+    {% if app_settings.dark_mode == 'true' %}
+    .badge-stock-in { background: rgba(16, 185, 129, 0.2) !important; color: #34d399 !important; }
+    .badge-stock-out { background: rgba(249, 115, 22, 0.2) !important; color: #ff9730 !important; }
+    {% endif %}
+</style>
+
+<div class="panel">
+    <div class="panel-header" style="display: flex; flex-direction: column; gap: 16px; align-items: stretch;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;">Stock Movements</h3>
+        </div>
+        
+        <div style="display: flex; gap: 12px; align-items: center; justify-content: space-between; width: 100%;">
+            <div class="search-input" style="margin-bottom: 0; max-width: 320px;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="search-input" placeholder="Search medicine" onkeyup="filterTable()">
+            </div>
+            
+            <div class="filter-container">
+                <i class="fa-solid fa-filter"></i>
+                <select id="filter-type" class="filter-select" onchange="filterTable()">
+                    <option value="">All Types</option>
+                    <option value="Stock-In">Stock-In</option>
+                    <option value="Stock-Out">Stock-Out</option>
+                </select>
+                <span style="color: var(--border-light); font-size: 14px; user-select: none; margin: 0 4px;">|</span>
+                <select id="filter-category" class="filter-select" onchange="filterTable()">
+                    <option value="">All Categories</option>
+                    {% for cat in items | map(attribute='category') | unique | sort %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                </select>
+                <span style="color: var(--border-light); font-size: 14px; user-select: none; margin: 0 4px;">|</span>
+                <input type="month" id="filter-month" class="filter-input-date" onchange="filterTable()">
+            </div>
+        </div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Medicine</th>
+                <th>Batch</th>
+                <th>Quantity</th>
+                <th>Date</th>
+                <th>Reference</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr data-type="{{ item.type }}" data-medicine="{{ item.medicine | lower }}" data-category="{{ item.category | lower }}" data-date="{{ item.date }}">
+                <td>{{ item.id }}</td>
+                <td>
+                    <span class="status-badge {% if item.type == 'Stock-In' %}badge-stock-in{% else %}badge-stock-out{% endif %}">
+                        {{ item.type }}
+                    </span>
+                </td>
+                <td>{{ item.medicine }}</td>
+                <td>{{ item.batch }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.date }}</td>
+                <td>{{ item.reference }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function filterTable() {
+        const search = document.getElementById('search-input').value.toLowerCase();
+        const type = document.getElementById('filter-type').value;
+        const category = document.getElementById('filter-category').value.toLowerCase();
+        const monthVal = document.getElementById('filter-month').value; // YYYY-MM
+        
+        document.querySelectorAll('tbody tr').forEach(row => {
+            const med = row.dataset.medicine || '';
+            const rType = row.dataset.type || '';
+            const rCategory = row.dataset.category || '';
+            const rDate = row.dataset.date || '';
+            
+            const matchesSearch = med.includes(search);
+            const matchesType = !type || rType === type;
+            const matchesCategory = !category || rCategory === category;
+            const matchesMonth = !monthVal || rDate.startsWith(monthVal);
+            
+            if (matchesSearch && matchesType && matchesCategory && matchesMonth) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

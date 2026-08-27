@@ -1,0 +1,331 @@
+{% extends 'base.html' %}
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+<div class="panel">
+    <div class="panel-header" style="display: flex; flex-direction: column; gap: 16px; align-items: stretch; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-weight: 700; color: var(--text-dark); margin: 0;">System Users</h3>
+            <span class="list-count-badge">
+                {{ users | length }} / 5 user(s)
+            </span>
+        </div>
+        
+        <div style="display: flex; justify-content: flex-end;">
+            <button class="btn-primary" style="width: auto; padding: 8px 18px; font-size: 13px; font-weight: 600; border-radius: 20px; text-align: center; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; cursor: pointer;" onclick="openAddUserModal()">
+                <i class="fa-solid fa-user-plus"></i> Add User
+            </button>
+        </div>
+    </div>
+    
+    <div style="overflow-x: auto; margin-top: 16px;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--border-light);">
+                    <th style="color: var(--text-gray); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 16px 12px;">ID</th>
+                    <th style="color: var(--text-gray); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 16px 12px;">Name</th>
+                    <th style="color: var(--text-gray); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 16px 12px;">Username</th>
+                    <th style="color: var(--text-gray); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 16px 12px;">Role</th>
+                    <th style="color: var(--text-gray); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 16px 12px;">Email</th>
+                    <th style="color: var(--text-gray); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 16px 12px;">Contact</th>
+                    <th style="color: var(--text-gray); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 16px 12px;">Status</th>
+                    <th style="color: var(--text-gray); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 16px 12px; text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr style="border-bottom: 1px solid var(--border-light);">
+                    <td style="padding: 16px 12px; font-weight: 600; color: var(--text-dark);">{{ u.id }}<span style="display: none;">{{ u.user_id }}</span></td>
+                    <td style="padding: 16px 12px; font-weight: 700; color: var(--text-dark);">{{ u.name }}</td>
+                    <td style="padding: 16px 12px; font-weight: 600; color: #10b981;"><span style="display: none;">@{{ u.username }}</span>{{ u.username }}</td>
+                    <td style="padding: 16px 12px;">
+                        {% if u.role == 'Owner / Pharmacist' or 'Owner' in u.role %}
+                        <span style="background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block;">Owner</span>
+                        {% elif u.role == 'Staff' %}
+                        <span style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block;">Staff</span>
+                        {% else %}
+                        <span style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block;">{{ u.role }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 16px 12px; color: var(--text-dark);">{{ u.email if u.email else '—' }}</td>
+                    <td style="padding: 16px 12px; color: var(--text-dark);">{{ u.contact if u.contact else '—' }}</td>
+                    <td style="padding: 16px 12px;">
+                        <span style="background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block;">Active</span>
+                    </td>
+                    <td style="padding: 16px 12px; text-align: center;">
+                        <div style="display: flex; gap: 8px; justify-content: center; align-items: center;">
+                            <button type="button" class="btn-action-outline btn-edit" onclick="openEditUserModal('{{ u.id }}', '{{ u.name }}', '{{ u.username }}', '{{ u.password }}', '{{ u.role }}', '{{ u.contact }}', '{{ u.email }}', '{{ u.license_no }}', '{{ u.joined_date }}', '{{ u.address }}')">
+                                <i class="fa-solid fa-pen"></i> Edit
+                            </button>
+                            {% if u.role != 'Owner / Pharmacist' and 'Owner' not in u.role %}
+                            <button type="button" class="btn-action-outline btn-delete" onclick="confirmAction(event, 'Deactivate user?', () => deactivateUser('{{ u.name }}'))">
+                                <i class="fa-solid fa-user-xmark"></i> Deactivate
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div id="add-user-modal" class="modal-overlay" onclick="closeAddUserModalOnOverlay(event, this)">
+    <div class="modal-content" style="max-width: 650px; padding: 24px;">
+        <button class="modal-close" onclick="closeAddUserModal()">&times;</button>
+        <div class="modal-header" style="padding: 0 0 16px 0;">
+            <h3>Add New User</h3>
+            <p>Create a new user account and set their access role.</p>
+        </div>
+        
+        <form action="{{ url_for('users') }}" method="POST">
+            <div class="modal-body" style="padding: 16px 0 0 0;">
+                <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Full Name</label>
+                        <input type="text" class="form-control" name="name" required placeholder="John Doe">
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Username</label>
+                        <input type="text" class="form-control" name="username" required placeholder="johndoe" maxlength="15" pattern="[a-zA-Z0-9]{1,15}" title="Letters and numbers only, max 15 characters" oninput="this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 15)">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0; position: relative;">
+                        <label>Password</label>
+                        <input type="password" id="add-password" class="form-control" name="password" style="padding-right: 40px;" required placeholder="••••••••" maxlength="15" pattern="[a-zA-Z0-9]{1,15}" title="Letters and numbers only, max 15 characters" oninput="this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 15)">
+                        <button type="button" onclick="toggleAddPasswordVisibility()" style="position: absolute; right: 12px; top: 32px; background: none; border: none; cursor: pointer; color: var(--text-gray);">
+                            <i id="add-password-eye-icon" class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Role</label>
+                        <select class="form-control" name="role" required>
+                            <option value="Owner / Pharmacist">Owner / Pharmacist</option>
+                            <option value="Staff">Staff</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Contact Number</label>
+                        <input type="text" class="form-control" name="contact" required placeholder="09123456789">
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Email Address</label>
+                        <input type="email" class="form-control" name="email" required placeholder="john@doe.com">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>License No.</label>
+                        <input type="text" class="form-control" name="license_no" required placeholder="LIC-XXXXX">
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Joined Date</label>
+                        <input type="text" id="add-joined-date" class="form-control" name="joined_date" required placeholder="MM/DD/YYYY">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Address</label>
+                    <input type="text" class="form-control" name="address" required placeholder="Street, City, Province">
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+                    <button type="button" class="modal-btn-cancel" onclick="closeAddUserModal()">Cancel</button>
+                    <button type="submit" class="modal-btn-save">Save User</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="edit-user-modal" class="modal-overlay" onclick="closeEditUserModalOnOverlay(event, this)">
+    <div class="modal-content" style="max-width: 650px; padding: 24px;">
+        <button class="modal-close" onclick="closeEditUserModal()">&times;</button>
+        <div class="modal-header" style="padding: 0 0 16px 0;">
+            <h3>Edit User Details</h3>
+            <p>Update the user credentials and contact information.</p>
+        </div>
+        
+        <form action="{{ url_for('users') }}" method="POST">
+            <div class="modal-body" style="padding: 16px 0 0 0;">
+                <input type="hidden" id="edit-user-id" name="id">
+                
+                <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Full Name</label>
+                        <input type="text" id="edit-name" class="form-control" name="name" required>
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Username</label>
+                        <input type="text" id="edit-username" class="form-control" name="username" required maxlength="15" pattern="[a-zA-Z0-9]{1,15}" title="Letters and numbers only, max 15 characters" oninput="this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 15)">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0; position: relative;">
+                        <label>Password <span id="edit-password-help" style="font-size: 10px; color: var(--text-muted); font-weight: normal; display: none;">(Protected)</span></label>
+                        <input type="password" id="edit-password" class="form-control" name="password" style="padding-right: 40px;" required maxlength="15" pattern="[a-zA-Z0-9]{1,15}" title="Letters and numbers only, max 15 characters" oninput="this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 15)">
+                        <button type="button" id="edit-password-toggle-btn" onclick="togglePasswordVisibility()" style="position: absolute; right: 12px; top: 32px; background: none; border: none; cursor: pointer; color: var(--text-gray);">
+                            <i id="password-eye-icon" class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Role</label>
+                        <select id="edit-role" class="form-control" name="role" required>
+                            <option value="Owner / Pharmacist">Owner / Pharmacist</option>
+                            <option value="Staff">Staff</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Contact Number</label>
+                        <input type="text" id="edit-contact" class="form-control" name="contact" required>
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Email Address</label>
+                        <input type="email" id="edit-email" class="form-control" name="email" required>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>License No.</label>
+                        <input type="text" id="edit-license-no" class="form-control" name="license_no" required>
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Joined Date</label>
+                        <input type="text" id="edit-joined-date" class="form-control" name="joined_date" required>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Address</label>
+                    <input type="text" id="edit-address" class="form-control" name="address" required>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+                    <button type="button" class="modal-btn-cancel" onclick="closeEditUserModal()">Cancel</button>
+                    <button type="submit" class="modal-btn-save">Save Changes</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openAddUserModal() {
+        const currentUserCount = parseInt("{{ users | length }}");
+        if (currentUserCount >= 5) {
+            alert('Maximum user limit reached (5 users max). Cannot create additional accounts.');
+            return;
+        }
+
+        // Pre-fill with today's date
+        const today = new Date();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const yyyy = today.getFullYear();
+        document.getElementById('add-joined-date').value = `${mm}/${dd}/${yyyy}`;
+        
+        document.getElementById('add-user-modal').classList.add('active');
+    }
+
+    function closeAddUserModal() {
+        document.getElementById('add-user-modal').classList.remove('active');
+    }
+
+    function closeAddUserModalOnOverlay(e, overlay) {
+        if (e.target === overlay) {
+            closeAddUserModal();
+        }
+    }
+
+    function toggleAddPasswordVisibility() {
+        const passwordField = document.getElementById('add-password');
+        const eyeIcon = document.getElementById('add-password-eye-icon');
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            eyeIcon.className = 'fa-solid fa-eye-slash';
+        } else {
+            passwordField.type = 'password';
+            eyeIcon.className = 'fa-solid fa-eye';
+        }
+    }
+
+    function openEditUserModal(id, name, username, password, role, contact, email, licenseNo, joinedDate, address) {
+        document.getElementById('edit-user-id').value = id;
+        document.getElementById('edit-name').value = name;
+        document.getElementById('edit-username').value = username;
+
+        const currentUserId = "{{ session.get('user_id') }}";
+        const passwordInput = document.getElementById('edit-password');
+        const toggleBtn = document.getElementById('edit-password-toggle-btn');
+        const helpMsg = document.getElementById('edit-password-help');
+
+        if (String(id) !== String(currentUserId)) {
+            passwordInput.disabled = true;
+            passwordInput.value = '••••••••';
+            passwordInput.required = false;
+            if (toggleBtn) toggleBtn.style.display = 'none';
+            if (helpMsg) helpMsg.style.display = 'inline';
+        } else {
+            passwordInput.disabled = false;
+            passwordInput.value = password;
+            passwordInput.required = true;
+            if (toggleBtn) toggleBtn.style.display = 'block';
+            if (helpMsg) helpMsg.style.display = 'none';
+        }
+
+        // reset to password field type on modal open
+        document.getElementById('edit-password').type = 'password';
+        const eyeIcon = document.getElementById('password-eye-icon');
+        eyeIcon.className = 'fa-solid fa-eye';
+
+        document.getElementById('edit-role').value = role;
+        document.getElementById('edit-contact').value = contact;
+        document.getElementById('edit-email').value = email;
+        document.getElementById('edit-license-no').value = licenseNo;
+        document.getElementById('edit-joined-date').value = joinedDate;
+        document.getElementById('edit-address').value = address;
+        
+        document.getElementById('edit-user-modal').classList.add('active');
+    }
+
+    function closeEditUserModal() {
+        document.getElementById('edit-user-modal').classList.remove('active');
+    }
+
+    function closeEditUserModalOnOverlay(e, overlay) {
+        if (e.target === overlay) {
+            closeEditUserModal();
+        }
+    }
+
+    function togglePasswordVisibility() {
+        const passwordField = document.getElementById('edit-password');
+        const eyeIcon = document.getElementById('password-eye-icon');
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            eyeIcon.className = 'fa-solid fa-eye-slash';
+        } else {
+            passwordField.type = 'password';
+            eyeIcon.className = 'fa-solid fa-eye';
+        }
+    }
+
+    function deactivateUser(name) {
+        alert('User "' + name + '" deactivated successfully (simulation).');
+    }
+</script>
+{% endblock %}

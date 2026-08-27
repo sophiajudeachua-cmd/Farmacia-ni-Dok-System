@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+
+{% if session.get('role') != 'Staff' %}
+<!-- ── Download Banner ─────────────────────────────────── -->
+<div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm);">
+    <h3 style="font-size: 15px; font-weight: 700; color: var(--text); margin: 0 0 14px 0;">Generate Report</h3>
+
+    <form action="{{ url_for('download_report') }}" method="POST" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <select class="form-control" name="report_type" style="width: 155px; border-radius: 20px; padding: 7px 12px; font-size: 12px; border: 1.5px solid var(--border);" required>
+                <option value="sales">Transactions Report</option>
+                <option value="inventory">Inventory Stock</option>
+                <option value="stock_movements">Stock Movements</option>
+            </select>
+
+            <select id="report-frequency" class="form-control" name="frequency" style="width: 100px; border-radius: 20px; padding: 7px 12px; font-size: 12px; border: 1.5px solid var(--border);" onchange="updatePeriodVisibility()" required>
+                <option value="weekly">Weekly</option>
+                <option value="monthly" selected>Monthly</option>
+                <option value="annual">Annual</option>
+            </select>
+
+            <div id="period-week-group" class="period-group" style="display: none;">
+                <input type="week" class="form-control" name="period_week" style="width: 135px; border-radius: 20px; padding: 7px 12px; font-size: 12px; border: 1.5px solid var(--border);">
+            </div>
+            <div id="period-month-group" class="period-group">
+                <input type="month" id="month-input" class="form-control" name="period_month" style="width: 135px; border-radius: 20px; padding: 7px 12px; font-size: 12px; border: 1.5px solid var(--border);">
+            </div>
+            <div id="period-year-group" class="period-group" style="display: none;">
+                <select class="form-control" name="period_year" style="width: 90px; border-radius: 20px; padding: 7px 12px; font-size: 12px; border: 1.5px solid var(--border);">
+                    <option value="2026" selected>2026</option>
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center; border-left: 1.5px solid var(--border); padding-left: 12px;">
+                <label style="display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-secondary);">
+                    <input type="radio" name="format" value="excel" checked style="accent-color: var(--accent);"> Excel
+                </label>
+                <label style="display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-secondary);">
+                    <input type="radio" name="format" value="pdf" style="accent-color: var(--accent);"> PDF
+                </label>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: auto; padding: 8px 20px; font-size: 12.5px; font-weight: 600; border-radius: 20px; display: inline-flex; align-items: center; gap: 7px;">
+                <i class="fa-solid fa-download"></i> Download
+            </button>
+        </form>
+</div>
+{% endif %}
+
+
+<!-- ── Section Label ───────────────────────────────────── -->
+<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+    <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Live Analytics</span>
+    <div style="flex: 1; height: 1px; background: var(--border);"></div>
+</div>
+
+<!-- ── Charts Grid: 3-across ──────────────────────────── -->
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px;">
+
+    <!-- Chart 1: Stock by Category -->
+    <div class="report-chart-card">
+        <div class="rcc-header">
+            <span class="rcc-icon" style="background: rgba(20,184,166,0.12); color: #0d9488;"><i class="fa-solid fa-chart-column"></i></span>
+            <div>
+                <div class="rcc-title">Stock by Category</div>
+                <div class="rcc-sub">Total units per category</div>
+            </div>
+        </div>
+        <div class="rcc-body">
+            <canvas id="stockByCategoryChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 2: Inventory Distribution -->
+    <div class="report-chart-card">
+        <div class="rcc-header">
+            <span class="rcc-icon" style="background: rgba(139,92,246,0.12); color: #7c3aed;"><i class="fa-solid fa-chart-pie"></i></span>
+            <div>
+                <div class="rcc-title">Inventory Distribution</div>
+                <div class="rcc-sub">Stock share by category</div>
+            </div>
+        </div>
+        <div class="rcc-body">
+            <canvas id="inventoryDistributionChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 3: Top Products -->
+    <div class="report-chart-card">
+        <div class="rcc-header">
+            <span class="rcc-icon" style="background: rgba(99,102,241,0.12); color: #6366f1;"><i class="fa-solid fa-ranking-star"></i></span>
+            <div>
+                <div class="rcc-title">Top 10 Products</div>
+                <div class="rcc-sub">Highest stocked medicines</div>
+            </div>
+        </div>
+        <div class="rcc-body">
+            <canvas id="topProductsStockChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 4: Low Stock by Category -->
+    <div class="report-chart-card">
+        <div class="rcc-header">
+            <span class="rcc-icon" style="background: rgba(220,38,38,0.10); color: #dc2626;"><i class="fa-solid fa-triangle-exclamation"></i></span>
+            <div>
+                <div class="rcc-title">Low Stock by Category</div>
+                <div class="rcc-sub">Items below reorder level</div>
+            </div>
+        </div>
+        <div class="rcc-body">
+            <canvas id="lowStockByCategoryChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 5: Expiring by Category -->
+    <div class="report-chart-card">
+        <div class="rcc-header">
+            <span class="rcc-icon" style="background: rgba(245,158,11,0.12); color: #d97706;"><i class="fa-solid fa-hourglass-half"></i></span>
+            <div>
+                <div class="rcc-title">Expiring by Category</div>
+                <div class="rcc-sub">Near-expiry counts</div>
+            </div>
+        </div>
+        <div class="rcc-body">
+            <canvas id="expiringByCategoryChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 6: Monthly Movement -->
+    <div class="report-chart-card">
+        <div class="rcc-header">
+            <span class="rcc-icon" style="background: rgba(59,130,246,0.10); color: #3b82f6;"><i class="fa-solid fa-arrows-up-down"></i></span>
+            <div>
+                <div class="rcc-title">Monthly Stock Movement</div>
+                <div class="rcc-sub">Stock-in vs stock-out</div>
+            </div>
+        </div>
+        <div class="rcc-body">
+            <canvas id="monthlyStockMovementChart"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<!-- ── Chart Card Styles ───────────────────────────────── -->
+<style>
+.report-chart-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow-sm);
+    display: flex; flex-direction: column; gap: 14px;
+    transition: box-shadow 0.18s;
+}
+.report-chart-card:hover { box-shadow: var(--shadow-md); }
+.rcc-header { display: flex; align-items: center; gap: 11px; }
+.rcc-icon {
+    width: 34px; height: 34px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+}
+.rcc-title { font-size: 12.5px; font-weight: 700; color: var(--text); line-height: 1.3; }
+.rcc-sub   { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
+.rcc-body  { position: relative; height: 170px; width: 100%; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const isDarkMode = '{{ app_settings.dark_mode }}' === 'true';
+    const textColor = isDarkMode ? '#94a3b8' : '#64748b';
+    const gridColor = isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+
+    // Set default month
+    document.addEventListener("DOMContentLoaded", function() {
+        const now = new Date();
+        document.getElementById('month-input').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    });
+
+    function updatePeriodVisibility() {
+        const freq = document.getElementById('report-frequency').value;
+        document.querySelectorAll('.period-group').forEach(g => {
+            g.style.display = 'none';
+            g.querySelectorAll('input, select').forEach(i => i.disabled = true);
+        });
+        const map = { weekly: 'period-week-group', monthly: 'period-month-group', annual: 'period-year-group' };
+        const el = document.getElementById(map[freq]);
+        if (el) { el.style.display = 'block'; el.querySelectorAll('input, select').forEach(i => i.disabled = false); }
+    }
+
+    // Shared chart defaults
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.font.size = 11;
+
+    const defaultBarOpts = (axis='x') => ({
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            [axis === 'x' ? 'y' : 'x']: { grid: { color: gridColor }, ticks: { color: textColor, maxTicksLimit: 5 }, border: { display: false } },
+            [axis]: { grid: { display: false }, ticks: { color: textColor, maxRotation: 35 }, border: { display: false } }
+        }
+    });
+
+    // Chart 1: Stock by Category (bar)
+    const ctx1 = document.getElementById('stockByCategoryChart').getContext('2d');
+    const g1 = ctx1.createLinearGradient(0, 0, 0, 170);
+    g1.addColorStop(0, '#14b8a6'); g1.addColorStop(1, 'rgba(20,184,166,0.25)');
+    new Chart(ctx1, {
+        type: 'bar',
+        data: { labels: {{ categories | tojson }}, datasets: [{ label: 'Stock', data: {{ cat_stock_values | tojson }}, backgroundColor: g1, borderRadius: { topLeft: 6, topRight: 6 } }] },
+        options: defaultBarOpts('x')
+    });
+
+    // Chart 2: Distribution (doughnut, more compact)
+    const ctx2 = document.getElementById('inventoryDistributionChart').getContext('2d');
+    new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: {{ categories | tojson }},
+            datasets: [{ data: {{ cat_stock_values | tojson }},
+                backgroundColor: ['#c0392b','#6366f1','#14b8a6','#f59e0b','#10b981','#ec4899','#3b82f6','#8b5cf6'],
+                borderWidth: 2, borderColor: isDarkMode ? '#1e1c19' : '#ffffff', hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, cutout: '60%',
+            plugins: { legend: { position: 'right', labels: { boxWidth: 9, usePointStyle: true, font: { size: 10 }, color: textColor, padding: 8 } } }
+        }
+    });
+
+    // Chart 3: Top products (horizontal bar)
+    const ctx3 = document.getElementById('topProductsStockChart').getContext('2d');
+    const g3 = ctx3.createLinearGradient(0, 0, 200, 0);
+    g3.addColorStop(0, '#6366f1'); g3.addColorStop(1, 'rgba(99,102,241,0.25)');
+    new Chart(ctx3, {
+        type: 'bar', indexAxis: 'y',
+        data: { labels: {{ top_products_labels | tojson }}, datasets: [{ label: 'Stock', data: {{ top_products_values | tojson }}, backgroundColor: g3, borderRadius: { topRight: 6, bottomRight: 6 } }] },
+        options: defaultBarOpts('y')
+    });
+
+    // Chart 4: Low stock (bar)
+    const ctx4 = document.getElementById('lowStockByCategoryChart').getContext('2d');
+    const g4 = ctx4.createLinearGradient(0, 0, 0, 170);
+    g4.addColorStop(0, '#dc2626'); g4.addColorStop(1, 'rgba(220,38,38,0.25)');
+    new Chart(ctx4, {
+        type: 'bar',
+        data: { labels: {{ categories | tojson }}, datasets: [{ label: 'Low Stock', data: {{ low_stock_cat_values | tojson }}, backgroundColor: g4, borderRadius: { topLeft: 6, topRight: 6 } }] },
+        options: defaultBarOpts('x')
+    });
+
+    // Chart 5: Expiring (bar)
+    const ctx5 = document.getElementById('expiringByCategoryChart').getContext('2d');
+    const g5 = ctx5.createLinearGradient(0, 0, 0, 170);
+    g5.addColorStop(0, '#f59e0b'); g5.addColorStop(1, 'rgba(245,158,11,0.25)');
+    new Chart(ctx5, {
+        type: 'bar',
+        data: { labels: {{ categories | tojson }}, datasets: [{ label: 'Expiring', data: {{ expiring_cat_values | tojson }}, backgroundColor: g5, borderRadius: { topLeft: 6, topRight: 6 } }] },
+        options: defaultBarOpts('x')
+    });
+
+    // Chart 6: Monthly movement (area line)
+    const ctx6 = document.getElementById('monthlyStockMovementChart').getContext('2d');
+    const gIn  = ctx6.createLinearGradient(0, 0, 0, 170); gIn.addColorStop(0, 'rgba(16,185,129,0.22)');  gIn.addColorStop(1, 'rgba(16,185,129,0)');
+    const gOut = ctx6.createLinearGradient(0, 0, 0, 170); gOut.addColorStop(0, 'rgba(220,38,38,0.18)'); gOut.addColorStop(1, 'rgba(220,38,38,0)');
+    new Chart(ctx6, {
+        type: 'line',
+        data: {
+            labels: {{ months_list | tojson }},
+            datasets: [
+                { label: 'Stock-In', data: {{ stock_in_values | tojson }}, borderColor: '#10b981', backgroundColor: gIn, borderWidth: 2.5, tension: 0.4, fill: true, pointRadius: 3, pointBackgroundColor: '#fff', pointBorderColor: '#10b981', pointBorderWidth: 2 },
+                { label: 'Stock-Out', data: {{ stock_out_values | tojson }}, borderColor: '#dc2626', backgroundColor: gOut, borderWidth: 2.5, tension: 0.4, fill: true, pointRadius: 3, pointBackgroundColor: '#fff', pointBorderColor: '#dc2626', pointBorderWidth: 2 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'top', align: 'end', labels: { color: textColor, font: { size: 11, weight: '600' }, boxWidth: 9, usePointStyle: true, padding: 12 } } },
+            scales: {
+                y: { grid: { color: gridColor }, ticks: { color: textColor, maxTicksLimit: 5 }, border: { display: false } },
+                x: { grid: { display: false }, ticks: { color: textColor }, border: { display: false } }
+            }
+        }
+    });
+</script>
+{% endblock %}
